@@ -14,6 +14,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 APP_DIR = Path(__file__).resolve().parent.parent
+CODE_GS = (APP_DIR / "receiver" / "Code.gs").read_text()
 RECEIVER_GLOB = "https://script.google.com/macros/**"
 
 # Chromium does not route beacons through Playwright, so a page closed with
@@ -84,9 +85,10 @@ class AppTestCase(unittest.TestCase):
         if cls.server:
             cls.server.shutdown()
 
-    def new_context(self, browser, init_script=None):
-        """A fresh browser profile (own localStorage) with a fake receiver."""
-        context = browser.new_context()
+    def new_context(self, browser, init_script=None, **options):
+        """A fresh browser profile (own localStorage) with a fake receiver.
+        options go to Playwright, e.g. a device to emulate."""
+        context = browser.new_context(**options)
         self.addCleanup(context.close)
         receiver = FakeReceiver()
         context.route(RECEIVER_GLOB, receiver.handle)
@@ -129,3 +131,29 @@ class AppTestCase(unittest.TestCase):
         for label in labels:
             page.locator(".placeholder", has_text=label).wait_for()
             page.get_by_role("button", name="Далі").click()
+
+    def session_blocks(self, page):
+        """(id, label, is a placeholder) of every block, in session order."""
+        return page.evaluate(
+            "import('./src/blocks.js').then(m => m.BLOCKS.map(b => [b.id, b.label, m.isPlaceholder(b)]))")
+
+    def pass_block(self, page, block_id, label, placeholder):
+        """Gets through one block as a participant on a desktop would."""
+        if placeholder:
+            page.locator(".placeholder", has_text=label).wait_for()
+            page.get_by_role("button", name="Далі").click()
+        elif block_id == "fullscreen":
+            page.get_by_role("button", name="Увімкнути повноекранний режим").click()
+        elif block_id != "device_check":  # an accepted device sees no screen
+            raise AssertionError(f"no way through block {block_id}")
+
+    def wait_delivered(self, page):
+        page.wait_for_function("() => window.tmtua.sender.pending() === 0", timeout=15000)
+
+    def assert_valid_for_receiver(self, context, messages):
+        """Every message must pass the real receiver's validation."""
+        page = context.new_page()
+        page.add_script_tag(content=CODE_GS)
+        for message in messages:
+            self.assertIsNone(page.evaluate("p => validatePayload(p)", message), message)
+        page.close()

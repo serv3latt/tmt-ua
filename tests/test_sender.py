@@ -8,9 +8,8 @@ import unittest
 
 from playwright.sync_api import expect
 
-from harness import APP_DIR, AppTestCase
+from harness import AppTestCase
 
-CODE_GS = (APP_DIR / "receiver" / "Code.gs").read_text()
 LAST_FOUR = ["PSS-10", "Питання після тесту", "Запрошення на ретест", "Подяка"]
 LAST_FOUR_IDS = ["pss10", "post", "retest_invite", "thanks"]
 FAST = "&set.send.retryBaseMs=100&set.send.retryMaxMs=500"
@@ -18,19 +17,8 @@ CODE_RE = re.compile(r"^[2-9a-hjkmnp-z]+$")
 
 
 class SenderTest(AppTestCase):
-    def wait_delivered(self, page):
-        page.wait_for_function("() => window.tmtua.sender.pending() === 0", timeout=15000)
-
     def outbox_keys(self, page):
         return page.evaluate("Object.keys(localStorage).filter(k => k.startsWith('tmtua.outbox.'))")
-
-    def assert_valid_for_receiver(self, context, messages):
-        """Every message must pass the real receiver's validation."""
-        page = context.new_page()
-        page.add_script_tag(content=CODE_GS)
-        for message in messages:
-            self.assertIsNone(page.evaluate("p => validatePayload(p)", message), message)
-        page.close()
 
     def test_each_block_is_delivered_once_in_order(self):
         for browser in self.browsers:
@@ -163,14 +151,16 @@ class SenderTest(AppTestCase):
                 context, receiver = self.new_context(browser)
                 page, errors = self.open(browser, "?mode=pilot", context=context)
                 texts = self.module(page, "texts.uk.js")["texts"]
-                labels = [label for _, label in self.blocks(page)]
+                blocks = self.session_blocks(page)
                 self.set_offline(context, receiver, True)
-                self.click_through(page, labels)
+                for block in blocks:
+                    self.pass_block(page, *block)
                 expect(page.locator(".message")).to_have_text(texts["data"]["offline"])
 
                 self.set_offline(context, receiver, False)
                 expect(page.locator(".message")).to_have_text(texts["common"]["sessionEnd"], timeout=15000)
-                self.assertEqual(len(receiver.accepted), 16)
+                # every block but device_check, which sends nothing (decision 97)
+                self.assertEqual(receiver.blocks(), [b[0] for b in blocks[1:]])
                 self.assertEqual({m["mode"] for m in receiver.accepted}, {"pilot"})
 
     def test_blocked_storage_still_delivers(self):

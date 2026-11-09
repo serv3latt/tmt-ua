@@ -24,10 +24,47 @@ body {
   text-align: center;
 }
 
+/* Text screens: device check, fullscreen. Texts come as HTML paragraphs. */
+
+.screen {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 16px;
+  font: 1.25rem/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  text-align: center;
+}
+
+/* Brings fullscreen back during a task (decision 87). Above everything,
+   including a task's area. */
+
+.fs-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  background: #fff3c4;
+  border-bottom: 1px solid #d4b400;
+}
+
+.fs-banner[hidden] {
+  display: none;
+}
+
+.fs-banner button {
+  font: 1rem/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+
 /* Dev mode only */
 
 .dev-menu,
-.dev-end {
+.dev-end,
+.dev-env {
   max-width: 48rem;
   margin: 2rem auto;
   padding: 0 16px;
@@ -35,8 +72,35 @@ body {
 }
 
 .dev-menu h1,
-.dev-end h1 {
+.dev-end h1,
+.dev-env h1 {
   font-size: 1.25rem;
+}
+
+.dev-env h2 {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
+.env-key {
+  display: inline-block;
+  min-width: 2.5em;
+  margin: 0 4px 4px 0;
+  padding: 6px 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.env-key-ok {
+  border-color: #2a8a2a;
+  background: #c8f0c8;
+}
+
+.env-key-log {
+  max-height: 10em;
+  overflow: auto;
+  font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
 }
 
 .dev-menu table {

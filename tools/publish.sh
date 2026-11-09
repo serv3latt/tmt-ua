@@ -8,7 +8,7 @@
 
 set -eu
 
-REPO_URL=https://github.com/aonysko/tmt-ua.git
+REPO_URL=https://github.com/serv3latt/tmt-ua.git
 ROOT=$(git rev-parse --show-toplevel)
 WORK="$ROOT/.publish"
 MESSAGE=${1:?"Usage: sh app/tools/publish.sh \"commit message\""}

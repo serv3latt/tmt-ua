@@ -1,4 +1,4 @@
-"""Runs dev sessions against the REAL receiver (task T0.3).
+"""Runs dev sessions against the REAL receiver (tasks T0.3, T0.5).
 
 Not part of the automatic test run: it writes rows into the PILOT storage
 (mode=dev). Prints the session ids; then compare the pilot spreadsheet with
@@ -40,15 +40,18 @@ def main():
             browser = browser_type.launch()
             name = browser_type.name
 
-            # 1. Whole session, connection drops after 8 blocks and comes back.
+            # 1. Whole session, connection drops after 7 messages and comes
+            # back. device_check shows no screen on a desktop and sends nothing.
             context = browser.new_context()
             page = context.new_page()
             page.goto(base + "?mode=dev&start=device_check")
             session_id = page.evaluate("window.tmtua.ids.session_id")
-            click_through(page, 8)
+            click_through(page, 5)  # consent .. calibration
+            page.get_by_role("button", name="Увімкнути повноекранний режим").click()
+            click_through(page, 1)  # tmt_a
             wait_delivered(page)
             context.set_offline(True)
-            click_through(page, 7)
+            click_through(page, 7)  # tmt_b .. retest_invite
             page.get_by_role("button", name="Далі").click()  # last block
             page.locator(".dev-end").wait_for()
             queued = page.evaluate("window.tmtua.sender.pending()")
@@ -76,9 +79,14 @@ def main():
     print("\n".join(report))
     print("""
 Expected in the pilot sessions sheet:
-- each "full session" id: one row, 16 *_placeholder columns equal to 1,
-  device_* columns filled, session_type "first", last_block "thanks"
-- each "beacon only" id: one row with tmt_a_placeholder = 1""")
+- each "full session" id: one row, 14 *_placeholder columns equal to 1,
+  fullscreen_status "entered", device_* columns filled (device_any_pointer_fine
+  among them), session_type "first", last_block "thanks"; for each of tmt_a,
+  tmt_b, coding, stroop, sart nine columns <task>_hidden_n, _hidden_ms,
+  _blur_n, _blur_ms, _fs_exit_n, _fs_exit_ms, _resize_n, _zoom_n, _touch_n,
+  all 0 (a headless browser has nothing to leave); in the session's log
+  folder a JSON file per task with "env" inside
+- each "beacon only" id: one row with tmt_a_placeholder = 1 and tmt_a_* env columns""")
 
 
 if __name__ == "__main__":

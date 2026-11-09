@@ -4,7 +4,7 @@ Run from the app/ folder in an environment with Playwright installed
 (in the research repo: ../.venv/bin/python -m unittest discover -s tests -v).
 Needs internet access: jsPsych is loaded from the CDN. To check the published
 site instead of the local files, set TMTUA_BASE_URL, e.g.
-TMTUA_BASE_URL=https://aonysko.github.io/tmt-ua/
+TMTUA_BASE_URL=https://serv3latt.github.io/tmt-ua/
 """
 
 import json
@@ -19,15 +19,18 @@ class AppShellTest(AppTestCase):
     def test_main_mode_runs_all_blocks_in_order(self):
         for browser in self.browsers:
             with self.subTest(browser=browser.browser_type.name):
-                page, errors = self.open(browser, "")
-                blocks = self.blocks(page)
+                context, receiver = self.new_context(browser)
+                page, errors = self.open(browser, "", context=context)
+                blocks = self.session_blocks(page)
                 self.assertEqual(len(blocks), 16)
-                for _, label in blocks:
-                    expect(page.locator(".placeholder")).to_contain_text(label)
-                    page.get_by_role("button", name="Далі").click()
+                for block in blocks:
+                    self.pass_block(page, *block)
                 texts = self.module(page, "texts.uk.js")["texts"]
                 expect(page.locator(".message")).to_have_text(texts["common"]["sessionEnd"])
                 self.assertEqual(page.locator(".dev-badge").count(), 0)
+                # While some blocks are placeholders, main mode sends nothing,
+                # so the main spreadsheet stays empty until data collection.
+                self.assertEqual(receiver.requests, [])
                 self.assertEqual(errors, [])
 
     def test_unknown_mode_is_rejected(self):

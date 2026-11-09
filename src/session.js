@@ -1,18 +1,20 @@
 import { MODES, PARAMS } from './config.js';
 
-// Reads the page URL. Returns { mode, devStart, devOnly, overrides }, or
-// { error } when the link is malformed. Unknown modes are rejected rather than
-// treated as main, so a mistyped pilot link never writes into the main data.
+// Reads the page URL. Returns { mode, devStart, devOnly, devTool, overrides },
+// or { error } when the link is malformed. Unknown modes are rejected rather
+// than treated as main, so a mistyped pilot link never writes into the main
+// data.
 export function parseUrl(search) {
   const query = new URLSearchParams(search);
   const mode = query.get('mode') ?? 'main';
   if (!MODES.includes(mode)) return { error: 'bad_mode' };
 
-  const session = { mode, devStart: null, devOnly: null, overrides: {} };
+  const session = { mode, devStart: null, devOnly: null, devTool: null, overrides: {} };
   if (mode !== 'dev') return session;
 
   session.devStart = query.get('start');
   session.devOnly = query.get('only');
+  session.devTool = query.get('tool');
   for (const [key, value] of query) {
     if (key.startsWith('set.')) session.overrides[key.slice('set.'.length)] = value;
   }
