@@ -1,4 +1,4 @@
-"""Runs dev sessions against the REAL receiver (tasks T0.3, T0.5).
+"""Runs dev sessions against the REAL receiver (tasks T0.3, T0.5, T0.6).
 
 Not part of the automatic test run: it writes rows into the PILOT storage
 (mode=dev). Prints the session ids; then compare the pilot spreadsheet with
@@ -24,6 +24,17 @@ def click_through(page, count):
         page.wait_for_function("t => document.querySelector('.placeholder')?.textContent !== t", arg=text)
 
 
+def calibrate(page, card_px=380):
+    handle = page.locator("#jspsych-resize-handle")
+    box = handle.bounding_box()
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    page.mouse.move(x, y)
+    page.mouse.down()
+    page.mouse.move(x + (card_px - 250) / 2, y, steps=5)
+    page.mouse.up()
+    page.get_by_role("button", name="Готово: розмір збігається").click()
+
+
 def wait_delivered(page):
     page.wait_for_function("() => window.tmtua.sender.pending() === 0", timeout=120_000)
 
@@ -46,7 +57,10 @@ def main():
             page = context.new_page()
             page.goto(base + "?mode=dev&start=device_check")
             session_id = page.evaluate("window.tmtua.ids.session_id")
-            click_through(page, 5)  # consent .. calibration
+            click_through(page, 4)  # consent .. conditions
+            calibrate(page)
+            page.locator(".dev-square").wait_for()  # the 100 mm square, dev only
+            page.get_by_role("button", name="Далі").click()
             page.get_by_role("button", name="Увімкнути повноекранний режим").click()
             click_through(page, 1)  # tmt_a
             wait_delivered(page)
@@ -79,13 +93,16 @@ def main():
     print("\n".join(report))
     print("""
 Expected in the pilot sessions sheet:
-- each "full session" id: one row, 14 *_placeholder columns equal to 1,
-  fullscreen_status "entered", device_* columns filled (device_any_pointer_fine
+- each "full session" id: one row, 13 *_placeholder columns equal to 1,
+  px_per_mm 4.4393, calibration_card_px 380, calibration_attempts 1,
+  calibration_suspect 0, screen_w_mm 288.3, screen_h_mm 162.2,
+  fullscreen_status "entered", fullscreen_view_w_mm / _h_mm filled,
+  fullscreen_window_checks 0, no status column value, device_* columns filled (device_any_pointer_fine
   among them), session_type "first", last_block "thanks"; for each of tmt_a,
   tmt_b, coding, stroop, sart nine columns <task>_hidden_n, _hidden_ms,
   _blur_n, _blur_ms, _fs_exit_n, _fs_exit_ms, _resize_n, _zoom_n, _touch_n,
   all 0 (a headless browser has nothing to leave); in the session's log
-  folder a JSON file per task with "env" inside
+  folder calibration.json with the attempts and a JSON file per task with "env" inside
 - each "beacon only" id: one row with tmt_a_placeholder = 1 and tmt_a_* env columns""")
 
 

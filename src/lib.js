@@ -8,7 +8,8 @@
 export const initJsPsych = globalThis.initJsPsych;
 export const ParameterType = globalThis.jsPsychModule?.ParameterType ?? {};
 export const HtmlButtonResponse = globalThis.jsPsychHtmlButtonResponse;
+export const VirtualChinrest = globalThis.jsPsychVirtualChinrest;
 
 export const libsLoaded = Boolean(
-  initJsPsych && globalThis.jsPsychModule?.ParameterType && HtmlButtonResponse,
+  initJsPsych && globalThis.jsPsychModule?.ParameterType && HtmlButtonResponse && VirtualChinrest,
 );

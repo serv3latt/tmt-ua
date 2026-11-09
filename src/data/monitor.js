@@ -35,11 +35,12 @@ export function windowSnapshot() {
 const sameSnapshot = (a, b) => Object.keys(a).every((key) => a[key] === b[key]);
 
 // True when the page scale changed between two snapshots, which breaks sizes
-// set in mm by calibration. Zoom in Chrome and Firefox and a move to a screen
-// of another density change devicePixelRatio. Safari keeps devicePixelRatio
-// under zoom, but there the page area shrinks or grows in both directions
-// while the window stays the same. Pinch zoom on a touchpad changes the
-// visual viewport's scale.
+// set in mm by calibration. Zoom (keys or a pinch on a Mac touchpad) and a
+// move to a screen of another density change devicePixelRatio; checked by
+// hand in Chrome and Safari 26 on a Mac (T0.5). Older Safari kept
+// devicePixelRatio under zoom, but there the page area shrinks or grows in
+// both directions while the window stays the same. A pinch that only
+// magnifies (no reflow) changes the visual viewport's scale.
 export function scaleChanged(a, b) {
   if (a.dpr !== b.dpr || a.scale !== b.scale) return true;
   return a.ow === b.ow && a.oh === b.oh && a.w !== b.w && a.h !== b.h;
@@ -58,6 +59,7 @@ export function createMonitor({ onEvent } = {}) {
   let settleTimer = null;
   let lastFullscreenChange = -Infinity;
   let lastResize = null; // { t, event } of the last plain resize
+  let baseline = null; // scale at calibration: { dpr, scale }
 
   function record(t, event) {
     event = { t: Math.round(t - block.t0), ...event };
@@ -132,9 +134,17 @@ export function createMonitor({ onEvent } = {}) {
     true,
   );
 
+  // Remembers the scale the calibration was made at (T0.6).
+  function setBaseline() {
+    const { dpr, scale } = windowSnapshot();
+    baseline = { dpr, scale };
+  }
+
   // Something already going on when the task starts (e.g. the previous task
   // ran out of time while the tab was hidden) counts as one exit from the
-  // start of this task.
+  // start of this task. Likewise a task that starts at another scale than
+  // the calibration was made at counts one zoom: the scale may have changed
+  // between tasks, where nothing is watched.
   function startBlock(id) {
     // Asked directly: the change event can come after the gate has already
     // seen fullscreen return and let the task start.
@@ -157,6 +167,11 @@ export function createMonitor({ onEvent } = {}) {
         block.intervals[kind] = { n: 1, ms: 0, since: t0 };
         record(t0, { type: INTERVALS[kind][0], at_start: true });
       }
+    }
+    const current = windowSnapshot();
+    if (baseline && (current.dpr !== baseline.dpr || current.scale !== baseline.scale)) {
+      block.zoom += 1;
+      record(t0, { type: 'zoom', ...current, at_start: true, since_calibration: true });
     }
   }
 
@@ -189,5 +204,5 @@ export function createMonitor({ onEvent } = {}) {
     return { summary, log };
   }
 
-  return { startBlock, endBlock, active: () => block?.id ?? null };
+  return { setBaseline, startBlock, endBlock, active: () => block?.id ?? null };
 }

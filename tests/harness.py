@@ -137,11 +137,29 @@ class AppTestCase(unittest.TestCase):
         return page.evaluate(
             "import('./src/blocks.js').then(m => m.BLOCKS.map(b => [b.id, b.label, m.isPlaceholder(b)]))")
 
+    def calibrate(self, page, card_px=380):
+        """Drags the corner of the card picture until it is card_px wide (the
+        plugin grows the card by twice the drag) and confirms. 380 px is a
+        card at 4.44 px/mm, as on a 15" MacBook Air."""
+        handle = page.locator("#jspsych-resize-handle")
+        box = handle.bounding_box()
+        x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+        page.mouse.move(x, y)
+        page.mouse.down()
+        page.mouse.move(x + (card_px - 250) / 2, y, steps=5)
+        page.mouse.up()
+        page.get_by_role("button", name="Готово: розмір збігається").click()
+
     def pass_block(self, page, block_id, label, placeholder):
         """Gets through one block as a participant on a desktop would."""
         if placeholder:
             page.locator(".placeholder", has_text=label).wait_for()
             page.get_by_role("button", name="Далі").click()
+        elif block_id == "calibration":
+            self.calibrate(page)
+            if "mode=dev" in page.url:  # the 100 mm square, dev only
+                page.locator(".dev-square").wait_for()
+                page.get_by_role("button", name="Далі").click()
         elif block_id == "fullscreen":
             page.get_by_role("button", name="Увімкнути повноекранний режим").click()
         elif block_id != "device_check":  # an accepted device sees no screen

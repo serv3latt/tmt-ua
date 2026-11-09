@@ -34,6 +34,22 @@ body {
   text-align: center;
 }
 
+.screen-warning {
+  color: #a00;
+  font-weight: 600;
+}
+
+/* Calibration (virtual-chinrest plugin): the card picture has rounded
+   corners, so the plugin's grey box behind it is hidden. */
+
+#item {
+  background-color: transparent !important;
+}
+
+.calibration {
+  font-size: 1.1rem;
+}
+
 /* Brings fullscreen back during a task (decision 87). Above everything,
    including a task's area. */
 
@@ -124,6 +140,20 @@ body {
   padding: 8px;
   background: #f4f4f4;
   font-size: 12px;
+}
+
+.dev-calibration {
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.dev-square {
+  box-sizing: border-box;
+  margin: 0 auto 8px;
+  border: 1px solid #000;
+}
+
+.dev-status {
+  color: #a00;
 }
 
 .dev-badge {

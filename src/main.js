@@ -38,6 +38,9 @@ function withEnvironment(message, env) {
   };
 }
 
+// Marks the message of the block that ended the session early.
+const withStatus = (message, status) => ({ ...message, summary: { ...message?.summary, status } });
+
 function start() {
   document.title = texts.common.pageTitle;
 
@@ -70,6 +73,10 @@ function start() {
   const badge = isDev ? createDevBadge(session) : null;
   const ids = { session_id: newSessionId(), participant_code: newParticipantCode() };
   let atEnd = false;
+  // Set by a block that ends the session early (e.g. 'screen_too_small'):
+  // the block finishes, its message carries the status, and nothing after it runs.
+  let ending = null;
+  const endText = () => (ending ? texts.end[ending] : texts.common.sessionEnd);
   const sender = createSender({
     url: RECEIVER_URL,
     base: { ...ids, mode: session.mode, app_version: APP_VERSION },
@@ -77,7 +84,7 @@ function start() {
     ...params.send,
     onChange: (state) => {
       badge?.update(state);
-      if (atEnd && !isDev && state.pending === 0) showMessage(texts.common.sessionEnd);
+      if (atEnd && !isDev && state.pending === 0) showMessage(endText());
     },
   });
 
@@ -91,11 +98,11 @@ function start() {
     display_element: 'jspsych-target',
     on_finish: () => {
       exitFullscreen();
-      if (isDev) return renderDevEnd(jsPsych, session, badge);
+      if (isDev) return renderDevEnd(jsPsych, session, badge, ending);
       // The participant may close the tab right after the last screen, so
       // the thank-you text appears only once everything is delivered.
       atEnd = true;
-      if (sender.pending() === 0) return showMessage(texts.common.sessionEnd);
+      if (sender.pending() === 0) return showMessage(endText());
       showMessage(texts.data.sending);
       sender.flush().then((done) => done || showMessage(texts.data.offline));
     },
@@ -105,10 +112,22 @@ function start() {
   if (isDev) {
     document.body.append(badge.element);
     // Handle for debugging in the browser console and for automated checks.
-    window.tmtua = { jsPsych, params, session, sender, ids, monitor };
+    window.tmtua = { jsPsych, params, session, sender, ids, monitor, ctx: null };
   }
 
-  const ctx = { jsPsych, params, session, sender, monitor };
+  const ctx = {
+    jsPsych,
+    params,
+    session,
+    sender,
+    monitor,
+    calibration: null, // set by the calibration block: { pxPerMm, ... }
+    end: (status) => {
+      ending ??= status;
+    },
+    ending: () => ending,
+  };
+  if (isDev) window.tmtua.ctx = ctx;
   const timeline = blocks.map((b) => {
     const node = {
       timeline: b.build(b, ctx),
@@ -119,7 +138,10 @@ function start() {
       on_timeline_finish: () => {
         const env = b.isTask ? monitor.endBlock() : null;
         banner.refresh();
-        if (collecting) sender.send(b.id, withEnvironment(b.message(b, ctx), env));
+        let message = withEnvironment(b.message(b, ctx), env);
+        if (ending) message = withStatus(message, ending);
+        if (collecting) sender.send(b.id, message);
+        if (ending) jsPsych.abortExperiment();
       },
     };
     return b.isTask ? { timeline: [fullscreenGate(), node] } : node;

@@ -3,7 +3,7 @@
 // new version number (CLAUDE.md). Decision numbers refer to
 // docs/05-history-and-decisions.md in the private research repo.
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 
 // Values allowed in the ?mode= URL parameter; no parameter means 'main'.
 // pilot and dev write to the pilot copies of the spreadsheets (decision 53).
@@ -41,6 +41,19 @@ export const PARAMS = {
     mainTrials: 225, // decision 66
     digitMs: 250, // Robertson et al., 1997
     maskMs: 900, // Robertson et al., 1997
+  },
+  // Screen calibration with a card (decisions 60, 100).
+  calibration: {
+    attempts: 2, // a suspect result is asked to be redone once (decision 100)
+    screenWidthMinMm: 180, // the screen width a card result implies must be
+    screenWidthMaxMm: 900, // plausible: an 8" tablet .. a 40" monitor
+  },
+  // The area the tasks need, in mm. PROVISIONAL: set together with the TMT
+  // field size in T1.1 (open question B3); 240 x 150 lets 13" laptops in.
+  screen: {
+    minWidthMm: 240,
+    minHeightMm: 150,
+    windowChecks: 3, // without fullscreen: tries to make the window big enough (decision 101)
   },
   // Technical, not research parameters: how data delivery waits and retries
   // (data/sender.js). The receiver's first reply after a pause takes ~7 s.

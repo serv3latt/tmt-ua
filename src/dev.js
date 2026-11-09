@@ -49,10 +49,10 @@ export function createDevBadge(session) {
   return { element: badge, update };
 }
 
-export function renderDevEnd(jsPsych, session, badge) {
+export function renderDevEnd(jsPsych, session, badge, ending = null) {
   document.body.innerHTML = `
     <main class="dev-end">
-      <h1>Кінець dev-сесії</h1>
+      <h1>Кінець dev-сесії${ending ? ` · <span class="dev-status">${ending}</span>` : ''}</h1>
       <p><a href="${devUrl(session)}">До меню</a></p>
       <pre></pre>
     </main>`;
