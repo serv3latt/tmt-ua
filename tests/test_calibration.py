@@ -132,6 +132,75 @@ class CalibrationTest(CalibrationTestCase):
                 self.assertEqual(errors, [])
 
 
+class ArrowKeysTest(CalibrationTestCase):
+    def card_px(self, page):
+        return page.evaluate("[parseInt(item.style.width), parseInt(item.style.height)]")
+
+    def test_arrows_fine_tune_the_card(self):
+        for browser in self.browsers:
+            with self.subTest(browser=browser.browser_type.name):
+                # A low window, so that the page can scroll and an arrow key would scroll it.
+                context, receiver = self.new_context(browser, viewport={"width": 1280, "height": 450})
+                page, errors = self.open(browser, "?mode=dev&only=calibration" + FAST, context=context)
+                # jsPsych scrolls its own container, not the document.
+                scroller = "document.querySelector('#jspsych-target')"
+                self.assertGreater(page.evaluate(f"{scroller}.scrollHeight - {scroller}.clientHeight"), 0)
+                handle = page.locator("#jspsych-resize-handle")
+                box = handle.bounding_box()
+                x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+                page.mouse.move(x, y)
+                page.mouse.down()
+                page.mouse.move(x + 65, y, steps=5)  # to 380 px
+                page.mouse.up()
+                for key in ["ArrowRight", "ArrowRight", "ArrowRight", "Shift+ArrowLeft", "ArrowUp"]:
+                    page.keyboard.press(key)
+                self.assertEqual(self.card_px(page), [374, round(374 / (85.6 / 53.98))])
+                scroll = page.evaluate(f"[scrollY, {scroller}.scrollTop]")
+                page.keyboard.press("ArrowDown")
+                self.assertEqual(self.card_px(page)[0], 373)
+                page.wait_for_timeout(300)  # a scroll would be smooth, give it time
+                self.assertEqual(page.evaluate(f"[scrollY, {scroller}.scrollTop]"), scroll)  # nothing scrolled
+                page.get_by_role("button", name=DONE).click()
+                page.locator(".dev-square").wait_for()
+                page.keyboard.press("ArrowRight")  # no longer resizes anything
+                self.next(page)
+                self.wait_delivered(page)
+                message = self.message(receiver, "calibration")
+                self.assertEqual(message["summary"]["calibration_card_px"], 373)
+                self.assertEqual(message["summary"]["px_per_mm"], round(373 / 85.6, 4))
+                self.assertEqual(message["log"]["attempts"][0]["keys_n"], 6)
+                self.assertEqual(message["log"]["attempts"][0]["drags_n"], 1)
+                self.assertEqual(errors, [])
+
+    def test_retry_has_one_set_of_keys(self):
+        for browser in self.browsers:
+            with self.subTest(browser=browser.browser_type.name):
+                page, errors = self.open(browser, "?mode=dev&only=calibration")
+                page.get_by_role("button", name=DONE).click()  # untouched: asked again
+                expect(page.locator(".screen-warning")).to_be_visible()
+                page.keyboard.press("ArrowRight")
+                self.assertEqual(self.card_px(page)[0], 251)  # one step, not two
+                self.assertEqual(errors, [])
+
+    def test_keys_alone_count_as_adjusted(self):
+        for browser in self.browsers:
+            with self.subTest(browser=browser.browser_type.name):
+                context, receiver = self.new_context(browser)
+                page, errors = self.open(browser, "?mode=dev&only=calibration" + FAST, context=context)
+                expect(page.get_by_role("button", name=DONE)).to_be_visible()
+                for _ in range(13):
+                    page.keyboard.press("Shift+ArrowRight")
+                self.assertEqual(self.card_px(page)[0], 380)
+                page.get_by_role("button", name=DONE).click()
+                page.locator(".dev-square").wait_for()  # accepted: no retry warning
+                self.next(page)
+                self.wait_delivered(page)
+                attempt = self.message(receiver, "calibration")["log"]["attempts"][0]
+                self.assertEqual((attempt["card_px"], attempt["problem"], attempt["drags_n"], attempt["keys_n"]),
+                                 (380, None, 0, 13))
+                self.assertEqual(errors, [])
+
+
 class ScreenSizeTest(CalibrationTestCase):
     def test_small_screen_ends_the_session(self):
         # A pilot session as a participant sees it, on a 180 x 113 mm screen.

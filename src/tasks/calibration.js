@@ -6,7 +6,8 @@ import { texts } from '../texts.uk.js';
 // chinrest, Li et al., 2020), which tells how many CSS pixels make 1 mm on
 // this screen at this zoom. All stimulus sizes are then set in mm. A result
 // that looks wrong is asked to be redone once, then kept with a mark
-// (decision 100). Whether the task area fits is checked on the page itself
+// (decision 100). Besides dragging the corner, the arrow keys adjust the card
+// precisely (decision 102). Whether the task area fits is checked on the page itself
 // after the fullscreen step (tasks/fullscreen.js), not here: Chrome on a Mac
 // reports screen.width as at 100 % zoom even when the page is zoomed (seen
 // in T0.6), so a check against the screen would be off by the zoom.
@@ -32,6 +33,35 @@ export function calibrationProblem(cardPx, screenWidthPx, params) {
 // Used on the page after the fullscreen step.
 export function holdsTasks(w, h, pxPerMm, screenParams) {
   return w / pxPerMm >= screenParams.minWidthMm && h / pxPerMm >= screenParams.minHeightMm;
+}
+
+// Fine adjustment of the card with the arrow keys (decision 102): 1 px a
+// press, 10 px with Shift; holding a key repeats. A drag of the plugin's
+// red corner is coarse on a touchpad. The plugin reads the card's width only
+// when the participant confirms, so the keys just resize the same element
+// its corner does. Counts keys and drags for the log.
+function cardControls() {
+  const steps = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 };
+  const counts = { keys: 0, drags: 0 };
+  const onKey = (event) => {
+    const step = steps[event.key];
+    const item = document.querySelector('#item');
+    if (!step || !item) return;
+    event.preventDefault(); // no page scroll
+    const width = Math.max(20, parseInt(item.style.width, 10) + step * (event.shiftKey ? 10 : 1));
+    item.style.width = `${width}px`;
+    item.style.height = `${Math.round(width / (CARD_MM.w / CARD_MM.h))}px`;
+    counts.keys += 1;
+  };
+  const onDrag = () => {
+    counts.drags += 1;
+  };
+  document.addEventListener('keydown', onKey);
+  document.querySelector('#jspsych-resize-handle')?.addEventListener('mousedown', onDrag);
+  return {
+    counts,
+    detach: () => document.removeEventListener('keydown', onKey),
+  };
 }
 
 // Result of the last attempt, kept in ctx.calibration for the later blocks.
@@ -65,6 +95,7 @@ function devSquare(ctx) {
 export function calibrationScreens(block, ctx) {
   const params = ctx.params.calibration;
   const attempts = [];
+  let controls = null;
 
   const card = {
     type: VirtualChinrest,
@@ -77,11 +108,17 @@ export function calibrationScreens(block, ctx) {
     adjustment_prompt: () =>
       `<div class="screen calibration">${attempts.length ? texts.calibration.retry : ''}${texts.calibration.prompt}</div>`,
     adjustment_button_prompt: texts.calibration.button,
+    on_load: () => {
+      controls = cardControls();
+    },
     on_finish: (data) => {
+      controls.detach();
       attempts.push({
         card_px: data.item_width_px,
         rt_ms: data.rt,
         problem: calibrationProblem(data.item_width_px, screen.width, params),
+        drags_n: controls.counts.drags,
+        keys_n: controls.counts.keys,
       });
     },
   };
