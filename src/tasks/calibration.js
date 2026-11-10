@@ -5,8 +5,11 @@ import { texts } from '../texts.uk.js';
 // of a card until it matches a real one (the card part of the virtual
 // chinrest, Li et al., 2020), which tells how many CSS pixels make 1 mm on
 // this screen at this zoom. All stimulus sizes are then set in mm. A result
-// that looks wrong is asked to be redone once, then kept with a mark. If the
-// screen cannot hold the task area, the session ends (screen_too_small).
+// that looks wrong is asked to be redone once, then kept with a mark
+// (decision 100). Whether the task area fits is checked on the page itself
+// after the fullscreen step (tasks/fullscreen.js), not here: Chrome on a Mac
+// reports screen.width as at 100 % zoom even when the page is zoomed (seen
+// in T0.6), so a check against the screen would be off by the zoom.
 // In dev mode a 100 mm square follows, to check the result with a ruler.
 
 // ISO/IEC 7810 ID-1: bank cards, Ukrainian ID cards, driving licences.
@@ -26,11 +29,14 @@ export function calibrationProblem(cardPx, screenWidthPx, params) {
 }
 
 // Whether an area of w x h CSS px holds the task area at this calibration.
+// Used on the page after the fullscreen step.
 export function holdsTasks(w, h, pxPerMm, screenParams) {
   return w / pxPerMm >= screenParams.minWidthMm && h / pxPerMm >= screenParams.minHeightMm;
 }
 
 // Result of the last attempt, kept in ctx.calibration for the later blocks.
+// screenWmm/screenHmm are approximate: off by the zoom factor in Chrome on a
+// Mac when the page is zoomed; fullscreen_view_*_mm is exact.
 function summarize(attempts) {
   const last = attempts.at(-1);
   const pxPerMm = last.card_px / CARD_MM.w;
@@ -87,9 +93,6 @@ export function calibrationScreens(block, ctx) {
       on_timeline_finish: () => {
         ctx.calibration = summarize(attempts);
         ctx.monitor.setBaseline();
-        if (!holdsTasks(screen.width, screen.height, ctx.calibration.pxPerMm, ctx.params.screen)) {
-          ctx.end('screen_too_small');
-        }
       },
     },
     {
@@ -100,7 +103,7 @@ export function calibrationScreens(block, ctx) {
           choices: [texts.common.next],
         },
       ],
-      conditional_function: () => ctx.session.mode === 'dev' && !ctx.ending(),
+      conditional_function: () => ctx.session.mode === 'dev',
     },
   ];
 }

@@ -15,8 +15,9 @@ import {
 // (decision 93). Then the page must hold the task area at the calibrated
 // scale: without fullscreen the participant may enlarge the window and check
 // again a few times (decision 101); if it still does not fit, or does not
-// fit even in fullscreen, the session ends (screen_too_small). Without a
-// calibration (dev links that skip it) there is nothing to check.
+// fit even in fullscreen (the screen is too small), the session ends
+// (screen_too_small). Without a calibration (dev links that skip it) there
+// is nothing to check.
 export function fullscreenScreens(block, ctx) {
   const state = { checks: 0, viewMm: null };
   ctx.fullscreen = state;

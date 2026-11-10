@@ -1,7 +1,8 @@
 """Checks of task T0.6 in Chromium and WebKit: screen calibration with a card
 (virtual-chinrest), the redo of a suspect result (decision 100), the check
-that the screen and then the window hold the task area (decision 101), the
-early end with screen_too_small, and the zoom check against the calibration.
+that the page after the fullscreen step holds the task area (decision 101),
+the early end with screen_too_small, and the zoom check against the
+calibration.
 How true the 100 mm square is on real screens is measured by hand.
 """
 
@@ -139,15 +140,20 @@ class ScreenSizeTest(CalibrationTestCase):
                 context, receiver = self.new_context(browser, viewport={"width": 800, "height": 500})
                 page, errors = self.open(browser, "?mode=pilot", context=context)
                 texts = self.texts(page)
-                for block in self.session_blocks(page)[:6]:  # device check .. calibration
+                for block in self.session_blocks(page)[:7]:  # device check .. fullscreen
                     self.pass_block(page, *block)
                 expect(page.locator(".message")).to_have_text(texts["end"]["screen_too_small"],
                                                               timeout=15000)
                 self.assertEqual(receiver.blocks(), ["consent", "criteria", "demographics",
-                                                     "conditions", "calibration"])
-                summary = self.message(receiver, "calibration")["summary"]
-                self.assertEqual(summary["status"], "screen_too_small")
-                self.assertEqual(summary["screen_w_mm"], round(800 / PX_PER_MM, 1))
+                                                     "conditions", "calibration", "fullscreen"])
+                calibration = self.message(receiver, "calibration")["summary"]
+                self.assertNotIn("status", calibration)
+                self.assertEqual(calibration["screen_w_mm"], round(800 / PX_PER_MM, 1))
+                fullscreen = self.message(receiver, "fullscreen")["summary"]
+                self.assertEqual(fullscreen["status"], "screen_too_small")
+                self.assertEqual(fullscreen["fullscreen_status"], "entered")
+                self.assertEqual(fullscreen["fullscreen_view_w_mm"], round(800 / PX_PER_MM, 1))
+                page.wait_for_function("() => document.fullscreenElement === null")  # left at the end
                 self.assertEqual(errors, [])
 
     def test_too_small_in_dev_shows_the_status(self):
@@ -157,10 +163,12 @@ class ScreenSizeTest(CalibrationTestCase):
                 page, errors = self.open(
                     browser, "?mode=dev&start=calibration&set.screen.minWidthMm=400" + FAST, context=context)
                 self.calibrate(page)
+                page.locator(".dev-square").wait_for()
+                self.next(page)
+                page.get_by_role("button", name=ENTER).click()
                 expect(page.locator(".dev-status")).to_have_text("screen_too_small")
-                self.assertEqual(page.locator(".dev-square").count(), 0)
                 self.wait_delivered(page)
-                self.assertEqual(receiver.blocks(), ["calibration"])
+                self.assertEqual(receiver.blocks(), ["calibration", "fullscreen"])
                 self.assertEqual(errors, [])
 
     def window_without_fullscreen(self, browser):
