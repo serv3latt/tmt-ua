@@ -29,6 +29,8 @@ export function renderDevMenu(blocks, session) {
       <p><a href="${devUrl(session, { start: blocks[0].id })}">Уся сесія з початку</a></p>
       <p><a href="${devUrl(session, { tool: 'env' })}">Перевірка середовища</a>: клавіші в
         повноекранному режимі, вихід із вкладки, масштаб. Нічого не надсилає.</p>
+      <p><a href="${devUrl(session, { tool: 'tmt' })}">Варіанти TMT</a>: розташування, розміри й
+        шрифт у справжньому розмірі (спершу пройдіть калібрування в цьому браузері). Нічого не надсилає.</p>
       <table><tbody>${rows}</tbody></table>
       <p class="dev-hint">Параметри з <code>config.js</code> можна змінити в адресі,
         наприклад <code>&amp;set.tmt.timeLimitMs=20000</code>.</p>
@@ -53,7 +55,7 @@ export function renderDevEnd(jsPsych, session, badge, ending = null) {
   document.body.innerHTML = `
     <main class="dev-end">
       <h1>Кінець dev-сесії${ending ? ` · <span class="dev-status">${ending}</span>` : ''}</h1>
-      <p><a href="${devUrl(session)}">До меню</a></p>
+      <p><a href="${devUrl(session)}">До меню</a> · <a href="${devUrl(session, { tool: 'tmt' })}">Варіанти TMT</a></p>
       <pre></pre>
     </main>`;
   document.querySelector('.dev-end pre').textContent = JSON.stringify(

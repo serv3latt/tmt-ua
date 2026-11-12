@@ -1,5 +1,6 @@
 import { HtmlButtonResponse, VirtualChinrest } from '../lib.js';
 import { texts } from '../texts.uk.js';
+import { saveDevCalibration } from '../scale.js';
 
 // Block "calibration" (decisions 60, 100): the participant resizes a picture
 // of a card until it matches a real one (the card part of the virtual
@@ -11,7 +12,9 @@ import { texts } from '../texts.uk.js';
 // after the fullscreen step (tasks/fullscreen.js), not here: Chrome on a Mac
 // reports screen.width as at 100 % zoom even when the page is zoomed (seen
 // in T0.6), so a check against the screen would be off by the zoom.
-// In dev mode a 100 mm square follows, to check the result with a ruler.
+// In dev mode a 100 mm square follows, to check the result with a ruler, and
+// the result is remembered in this browser for dev links that skip this block
+// (scale.js).
 
 // ISO/IEC 7810 ID-1: bank cards, Ukrainian ID cards, driving licences.
 export const CARD_MM = { w: 85.6, h: 53.98 };
@@ -130,6 +133,7 @@ export function calibrationScreens(block, ctx) {
       on_timeline_finish: () => {
         ctx.calibration = summarize(attempts);
         ctx.monitor.setBaseline();
+        if (ctx.session.mode === 'dev') saveDevCalibration(ctx.calibration);
       },
     },
     {

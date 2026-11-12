@@ -5,6 +5,8 @@ import { BLOCKS, isPlaceholder } from './blocks.js';
 import { initJsPsych, libsLoaded } from './lib.js';
 import { renderDevMenu, createDevBadge, renderDevEnd } from './dev.js';
 import { renderEnvCheck } from './dev-env.js';
+import { renderTmtOptions } from './dev-tmt.js';
+import { taskScale } from './scale.js';
 import { newSessionId, newParticipantCode } from './data/ids.js';
 import { deviceInfo } from './data/device.js';
 import { createSender } from './data/sender.js';
@@ -51,6 +53,7 @@ function start() {
   const isDev = session.mode === 'dev';
   if (isDev && session.devTool !== null) {
     if (session.devTool === 'env') return renderEnvCheck(session);
+    if (session.devTool === 'tmt') return renderTmtOptions(session);
     return showMessage(`Unknown dev tool: ${session.devTool}`);
   }
   if (isDev && session.devStart === null && session.devOnly === null) {
@@ -122,6 +125,9 @@ function start() {
     sender,
     monitor,
     calibration: null, // set by the calibration block: { pxPerMm, ... }
+    // px per mm for a task: from the calibration; on dev links that skip it,
+    // the last dev calibration in this browser or a fallback (scale.js).
+    scale: () => taskScale(ctx),
     end: (status) => {
       ending ??= status;
     },

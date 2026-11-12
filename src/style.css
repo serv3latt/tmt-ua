@@ -174,3 +174,121 @@ body {
   border-color: #c00;
   background: #ffe0e0;
 }
+
+/* TMT options page (?mode=dev&tool=tmt): the field in the middle of the
+   page, the panel over its top edge. */
+
+.dev-tmt {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: #e9ecee;
+  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.tmt-stage {
+  display: flex;
+  min-width: 100%;
+  min-height: 100%;
+  width: max-content;
+  align-items: center;
+  justify-content: center;
+}
+
+.tmt-field {
+  display: block;
+  flex: none;
+  background: #fff;
+  user-select: none;
+}
+
+.tmt-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 4px 10px 6px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #b8bfc4;
+}
+
+.tmt-panel[hidden],
+.tmt-panel-show[hidden] {
+  display: none;
+}
+
+.tmt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 3px;
+}
+
+.tmt-group b {
+  margin-right: 5px;
+  font-weight: 600;
+}
+
+.dev-tmt button {
+  margin: 0 1px;
+  padding: 2px 8px;
+  border: 1px solid #98a2a8;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dev-tmt button.on {
+  border-color: #0b57a4;
+  background: #0b57a4;
+  color: #fff;
+}
+
+.tmt-notes {
+  color: #333;
+}
+
+.tmt-warn {
+  color: #b00020;
+  font-weight: 600;
+}
+
+.tmt-panel-show {
+  position: fixed;
+  top: 4px;
+  left: 4px;
+  z-index: 10;
+  opacity: 0.5;
+}
+
+/* Trying a layout: before the click on the cross only the cross is seen. */
+
+.tmt-waiting .tmt-circle,
+.tmt-waiting .tmt-word {
+  visibility: hidden;
+}
+
+.tmt-wrong circle {
+  stroke: #c8102e;
+  stroke-width: 0.9px;
+  fill: #fde8ea;
+}
+
+.tmt-trial-note {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  z-index: 10;
+  margin: 0;
+  text-align: center;
+  color: #333;
+}
+
+.tmt-trial-note[hidden] {
+  display: none;
+}

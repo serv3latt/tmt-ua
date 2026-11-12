@@ -3,7 +3,7 @@
 // new version number (CLAUDE.md). Decision numbers refer to
 // docs/05-history-and-decisions.md in the private research repo.
 
-export const APP_VERSION = '0.3.2';
+export const APP_VERSION = '0.4.0';
 
 // Values allowed in the ?mode= URL parameter; no parameter means 'main'.
 // pilot and dev write to the pilot copies of the spreadsheets (decision 53).

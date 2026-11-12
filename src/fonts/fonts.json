@@ -1,0 +1,37 @@
+{
+ "fonts": [
+  {
+   "id": "inter",
+   "family": "Inter TMT",
+   "label": "Inter",
+   "file": "inter.woff2",
+   "weight": 500,
+   "source_version": "Version 4.001;git-66647c0bb",
+   "cap": 0.7275,
+   "digit": 0.7275,
+   "bytes": 11324
+  },
+  {
+   "id": "montserrat",
+   "family": "Montserrat TMT",
+   "label": "Montserrat",
+   "file": "montserrat.woff2",
+   "weight": 500,
+   "source_version": "Version 9.000",
+   "cap": 0.7,
+   "digit": 0.7,
+   "bytes": 11736
+  },
+  {
+   "id": "arsenal",
+   "family": "Arsenal TMT",
+   "label": "Arsenal",
+   "file": "arsenal.woff2",
+   "weight": 700,
+   "source_version": "Version 2.000",
+   "cap": 0.65,
+   "digit": 0.65,
+   "bytes": 8716
+  }
+ ]
+}
